@@ -1,25 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" href="favicon.ico">
-  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AR Cube with A-Frame + WebXR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+  </head>
+  <body style="margin: 0; overflow: hidden">
+    <a-scene
+      xrweb
+      renderer="colorManagement: true; physicallyCorrectLights: true;"
+      webxr="requiredFeatures: hit-test;"
+      embedded
+      vr-mode-ui="enabled: false"
+      arjs
+    >
+      <a-entity camera position="0 0 0" look-controls></a-entity>
 
-  <title>Made with Needle</title>
-  
-  <meta property="og:title" content="Made with Needle" />
-  <meta name="description" content="🌵 Made with Needle Engine">
-  <meta property="og:description" content="🌵 Made with Needle Engine" />
-  
-  <meta name="robots" content="index,follow">
-  <meta name="url" content="https://needle.tools">
+      <!-- Retículo (para mostrar dónde se detecta la superficie) -->
+      <a-entity
+        id="reticle"
+        geometry="primitive: ring; radiusInner: 0.05; radiusOuter: 0.06;"
+        material="color: green; shader: flat"
+        rotation="-90 0 0"
+        visible="false"
+      ></a-entity>
 
-  <link rel="stylesheet" href="./src/styles/style.css">
-</head>
+      <!-- Cubo a colocar -->
+      <a-box
+        id="cube"
+        color="#4CC3D9"
+        depth="0.1"
+        height="0.1"
+        width="0.1"
+        visible="false"
+      ></a-box>
 
-<body>
-  <script type="module" src="./src/generated/gen.js"></script>
-  <script type="module" src="./src/main.ts"></script>
-  <needle-engine></needle-engine>
-</body>
+      <a-light type="ambient" intensity="1"></a-light>
+    </a-scene>
+
+    <script>
+      AFRAME.registerComponent("xrweb", {
+        init: function () {
+          const sceneEl = this.el;
+          let xrHitTestSource = null;
+          let xrRefSpace = null;
+          let reticle = document.getElementById("reticle");
+          let cube = document.getElementById("cube");
+
+          sceneEl.renderer.xr.addEventListener("sessionstart", async () => {
+            const session = sceneEl.renderer.xr.getSession();
+
+            xrRefSpace = await session.requestReferenceSpace("viewer");
+            const viewerSpace = await session.requestReferenceSpace("local");
+
+            const hitTestSource = await session.requestHitTestSource({
+              space: xrRefSpace,
+            });
+
+            xrHitTestSource = hitTestSource;
+
+            session.addEventListener("select", () => {
+              if (reticle.object3D.visible) {
+                cube.setAttribute("position", reticle.getAttribute("position"));
+                cube.setAttribute("visible", "true");
+              }
+            });
+
+            sceneEl.renderer.setAnimationLoop((timestamp, frame) => {
+              if (frame) {
+                const referenceSpace = sceneEl.renderer.xr.getReferenceSpace();
+                const hitTestResults = frame.getHitTestResults(xrHitTestSource);
+
+                if (hitTestResults.length > 0) {
+                  const hit = hitTestResults[0];
+                  const pose = hit.getPose(referenceSpace);
+
+                  reticle.object3D.visible = true;
+                  reticle.object3D.position.set(
+                    pose.transform.position.x,
+                    pose.transform.position.y,
+                    pose.transform.position.z
+                  );
+                } else {
+                  reticle.object3D.visible = false;
+                }
+              }
+            });
+          });
+        },
+      });
+    </script>
+  </body>
 </html>
