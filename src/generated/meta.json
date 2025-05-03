@@ -1,0 +1,16 @@
+{
+  "developmentBuild": false,
+  "generator": "Unity 2022.3.61f1, Needle Engine Integration @4.4.3",
+  "gzip": false,
+  "allowHotReload": true,
+  "license": {
+    "team": "org_hafmavqrgb95"
+  },
+  "facebookInstantGames": null,
+  "useRapier": true,
+  "needleEditor": null,
+  "sceneName": "Planetracker",
+  "meta": null,
+  "absolutePath": "https://localhost:3000",
+  "deployOnly": false
+}
